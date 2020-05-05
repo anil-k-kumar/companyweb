@@ -26,5 +26,8 @@ namespace companyweb1.Models
         }
     
         public virtual DbSet<user> users { get; set; }
+        public virtual DbSet<Employee> Employees { get; set; }
+        public virtual DbSet<Gender> Genders { get; set; }
+        public virtual DbSet<Designation> Designations { get; set; }
     }
 }

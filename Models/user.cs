@@ -11,16 +11,47 @@ namespace companyweb1.Models
 {
     using System;
     using System.Collections.Generic;
-    
+    using System.ComponentModel.DataAnnotations;
+
+    public partial class meta{
+           public string Cpassword { get; set; }
+
+}
+
     public partial class user
     {
         public int Id { get; set; }
+
+        [Display(Name = "First Name")]
+        [Required]
+        [RegularExpression("^[A-Z]+[a-z]*$", ErrorMessage = "First letter must be Uppercase followed by Lowercase letters and Only Alphates allowed ")]
         public string FName { get; set; }
+
+        //@"^[a-zA-Z''-'\s]{1,40}$"
+
+        [Display(Name = "Last Name")]
+        [Required]
+        [RegularExpression("[a-zA-Z_\\.-]{1,40}$", ErrorMessage = "Only Alphabets allowed")]
         public string LName { get; set; }
+
+        [Required]
+        [RegularExpression("^[a-zA-Z0-9_\\.-]+@([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$", ErrorMessage = "E-mail is not valid")]
+        [Display(Name = "Email Id")]
         public string Email { get; set; }
+
+        [Required]
+        [Display(Name = "User Name")]
         public string UserName { get; set; }
+
+        [Required]
+        [Display(Name ="Password")]
+        [DataType(DataType.Password)]
         public string Password { get; set; }
-        public bool EmailVarify { get; set; }
-        public System.Guid AuthCode { get; set; }
+
+        [Required]
+        [Display(Name ="Confirm Password")]
+        [DataType(DataType.Password)]
+        [Compare("Password",ErrorMessage ="Password not matching")]
+        public string Cpassword { get; set; }
     }
 }

@@ -10,7 +10,7 @@
 {
 
     <div class=" alert alert-success">
-        <strong>Success!</strong>@ViewBag.Message
+        <strong>Success! </strong>@ViewBag.Message
     </div>
 }
 else
@@ -20,7 +20,6 @@ else
         @Html.AntiForgeryToken()
 
         <div class="form-horizontal">
-            <h4>user</h4>
             <hr />
             @Html.ValidationSummary(true, "", new { @class = "text-danger" })
             <div class="form-group">
@@ -82,14 +81,14 @@ else
         if (ViewBag.Message != null)
         {
             <div class=" alert alert-danger">
-                <strong>Error!</strong>@ViewBag.Message
+                <strong>Error! </strong>@ViewBag.Message
             </div>
         }
     }
 }
 
 <div>
-    @Html.ActionLink("Click to Login", "Login")
+    <strong> @Html.ActionLink("Login", "Login") </Strong>
 </div>
 @section scripts{
 

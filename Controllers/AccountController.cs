@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Web;
 using System.Web.Mvc;
+using System.Web.Security;
 using companyweb1.Models;
 
 namespace companyweb1.Controllers
@@ -22,7 +23,6 @@ namespace companyweb1.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Register(user u)
         {
-            //[Bind(Exclude = "EmailVarify,AuthCode")]
         bool Status = false;
             string message = "";
             //verify model
@@ -34,21 +34,17 @@ namespace companyweb1.Controllers
                     ModelState.AddModelError("EmailExit", "Email already exist");
                     return View(u);
                 }
-                //genetrate activation token 
-                u.AuthCode = Guid.NewGuid();
                 //password hash
                 u.Password = Crypto.Hash(u.Password);
                 u.Cpassword = Crypto.Hash(u.Cpassword);// to remove conform paassword match issue as password is hashed 
-                //u.EmailVarify = false;
-                //savind data to database
+           
+                //saving data to database
                 using (companyEntities c=new companyEntities())
                 {
                     c.users.Add(u);
                     c.SaveChanges();
-                    //Sendind email verification
-                    //sendEmailLink(u.Email, u.AuthCode.ToString());
 
-                    message = "Regestraion is successfully done.Account activation link has been send to your Email Id: " + u.Email;
+                    message = "Regestraion is successfully done with user name " + u.UserName + " Using mail id: " + u.Email +"";
                     Status = true;
                 }
                 
@@ -72,53 +68,124 @@ namespace companyweb1.Controllers
                 return v != null;
             }
         }
-        [NonAction]
-        public void sendEmailLink(String Email,String AuthCode)
-        {
-            var VerUrl = "/user/VerifyAccount/" + AuthCode;
-            var link = Request.Url.AbsoluteUri.Replace(Request.Url.PathAndQuery, VerUrl);
 
-            var fromEmail = new MailAddress("kkumaranil485@gmail.com","Webpage Login");
-            var toEmail = new MailAddress(Email);
-            var fromPassword = "4MT15cs011";    //sender password
-            String sub = "your account creation is  success";
-            string body="Your account is succesfully created.Please click on below link to activate" + "<br><a href='"+link+"'>" + link + "</a>";
+
+        [HttpGet]
+        public ActionResult login()
+        {
+            return View();
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult login(userlog us)
+        {
+            using (companyEntities c = new companyEntities())
+            {
+                var v = c.users.Where(a => a.UserName == us.UserName).FirstOrDefault();
+                if (v != null)
+                {
+                    if(string.Compare(Crypto.Hash(us.Password),v.Password)==0){
+                        int timeout = us.Remember ? 525600 : 10;
+                        var ticket = new FormsAuthenticationTicket(us.UserName, us.Remember, timeout);
+                        string encrypt = FormsAuthentication.Encrypt(ticket);
+                        var cookie = new HttpCookie(FormsAuthentication.FormsCookieName, encrypt);
+                        cookie.Expires = DateTime.Now.AddMinutes(timeout);
+                        cookie.HttpOnly = true;
+                        Response.Cookies.Add(cookie);
+                        
+                        return RedirectToAction("Index","Employee");
+                      
+                       
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", "UserNaMe and Password Wrong.");
+
+                    }
+                    
+                }
+                else {
+
+                    ModelState.AddModelError("", "UserNaMe and Password Wrong.");
+                }
+            }
+            return View();
+        }
+
+
+        [NonAction]
+        public void SendEmail(string emailID,String UserName,string password)
+        {
+            var fromEmail = new MailAddress("kkumaranil485@gmail.com", "Company Web");
+            var toEmail = new MailAddress(emailID);
+            var fromEmailPassword = "4MT15cs011"; // Replace with actual password
+
+           
+                string subject = "Forgot Password";
+                string body = "Request for Your Forgot password is Succesfull." +"Your User Name and Password is as follows<br/>" + "User Name:" + UserName + "Password:" + password;
+        
+
             var smtp = new SmtpClient
             {
-                Host="smtp.gmail.com",
-                Port=587,
-                EnableSsl=true,
-                DeliveryMethod=SmtpDeliveryMethod.Network,
-                UseDefaultCredentials=false,
-                Credentials=new NetworkCredential(fromEmail.Address,fromPassword)
+                Host = "smtp.gmail.com",
+                Port = 587,
+                EnableSsl = true,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential(fromEmail.Address, fromEmailPassword)
             };
+
             using (var message = new MailMessage(fromEmail, toEmail)
             {
-                Subject = sub,
+                Subject = subject,
                 Body = body,
                 IsBodyHtml = true
             })
                 smtp.Send(message);
         }
-        public ActionResult login()
+
+        [HttpGet]
+        public ActionResult ForgotPassword()
         {
             return View();
         }
-        public ActionResult login(user us)
+
+        [HttpPost]
+        public ActionResult ForgotPassword(string EmailID,user u)
         {
-            using (companyEntities c = new companyEntities())
+            string message = "";
+            bool status = false;
+
+            using (companyEntities dc = new companyEntities())
             {
-                var v = c.users.Where(a => a.UserName == us.UserName && a.Password == us.Password).FirstOrDefault();
-                if (v != null)
+                var account = dc.users.Where(a => a.Email == EmailID).FirstOrDefault();
+                if (account != null)
                 {
-                    return RedirectToAction("Logout");               
+                    SendEmail(account.Email,u.UserName,u.Password);
+                    message = "Your User Name and Password has been sent to your email id.";
+                    status = true;
+                }
+                else
+                {
+                    message = "Account not found";
                 }
             }
+            ViewBag.Message = message;
+            ViewBag.Status = status;
             return View();
         }
+
+
+        public ActionResult Index()
+        {
+            return View();
+        }
+       
+        [Authorize]
         public ActionResult logout()
         {
-          
+            FormsAuthentication.SignOut();
+            return RedirectToAction("Login");
         }
     }
 
